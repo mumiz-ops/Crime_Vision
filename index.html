@@ -658,6 +658,37 @@
 </footer>
 
 <script>
+
+const API_BASE = 'https://buffed-carat-oink.ngrok-free.dev';
+let AUTH_TOKEN = null;
+
+async function apiCall(method, endpoint, body = null, auth = true) {
+  const headers = {'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true'};
+  if (auth && AUTH_TOKEN) headers['Authorization'] = 'Bearer ' + AUTH_TOKEN;
+  const res = await fetch(API_BASE + endpoint, {method, headers, body: body ? JSON.stringify(body) : null});
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function loadDashboard() {
+  const city = document.querySelector('.city-chip.active')?.textContent?.trim() || 'Lahore';
+  try {
+    const data = await apiCall('GET', '/api/ml/dashboard?city=' + city);
+    const vals = document.querySelectorAll('.metric-value');
+    if(vals[0]) vals[0].textContent = (data.total_crimes_30d || 0).toLocaleString();
+    if(vals[2]) vals[2].textContent = Math.round((data.forecast_accuracy || 0.87) * 100) + '%';
+    if(vals[3]) vals[3].textContent = data.active_anomalies || '0';
+  } catch(e) { console.log('Dashboard API error:', e.message); }
+}
+
+async function loadNLPSummary(city) {
+  try {
+    const data = await apiCall('GET', '/api/ml/summary?city=' + city);
+    const box = document.querySelector('.nlp-box');
+    if(box) box.textContent = data.summary;
+  } catch(e) { console.log('NLP API error:', e.message); }
+}
+
 // ── Page & SRS nav ──
 let currentRole = 'Analyst';
 
